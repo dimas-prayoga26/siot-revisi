@@ -1,0 +1,17 @@
+---
+  deployment:
+    tasks:
+      - export DEPLOYPATH_PUBLIC=/home/siotrsrm/public_html/
+      - export DEPLOYPATH_REPO=/home/siotrsrm/repositories/siotsr/
+
+      # Create the destination directories if they don't exist
+      - /bin/mkdir -p $DEPLOYPATH_PUBLIC
+      - /bin/mkdir -p $DEPLOYPATH_REPO
+
+      # Copy contents of the 'public' folder to public_html
+      - /bin/cp -R public/. $DEPLOYPATH_PUBLIC
+
+      # Copy entire project (excluding 'public') to repositories/siotsr
+      - /bin/find . -type f ! -path "./public/*" -exec /bin/cp --parents {} $DEPLOYPATH_REPO \;
+      - /bin/find . -type d ! -path "./public" -exec /bin/cp -R --parents {} $DEPLOYPATH_REPO \;
+      - /bin/find ./public -type f -name ".*" -exec /bin/cp --parents {} $DEPLOYPATH_REPO \;

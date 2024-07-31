@@ -1,0 +1,24 @@
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
+<<<<<<< HEAD
+si-ara-firebase-adminsdk-pb9pv-d3e0196954.json
+=======
+si-ara-firebase-adminsdk-pb9pv-d3e0196954.json
+>>>>>>> 4d75ad8a5efea6e1851349086718ba2e0efb6236
