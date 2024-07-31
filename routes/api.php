@@ -91,6 +91,7 @@ Route::middleware(['auth:api'])->group(function () {
 
 Route::middleware('check.unique.id')->group(function () {
     Route::post('/trash-data/create/{trashType}/{detailType?}/{uniqueId}', 'App\Http\Controllers\Api\TrashDataController@createByDetailType');
+    Route::post('/trash-data/create/{trashType}/{uniqueId}', 'App\Http\Controllers\Api\TrashDataController@createByDetailType');
     Route::get('/device-info/{uniqueId}', 'App\Http\Controllers\Api\TrashDataController@getDeviceInfo');
 });
 Route::post('/change-pin/{uniqueId}', 'App\Http\Controllers\Api\TrashDataController@changePin');

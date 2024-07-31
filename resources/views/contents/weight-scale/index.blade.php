@@ -57,8 +57,6 @@
                             <th>No</th>
                             <th>Nama Petugas</th>
                             <th>Name</th>
-                            <th>Latitude</th>
-                            <th>Longitude</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -143,26 +141,6 @@
                 }
             }
             },
-            {
-                targets: 3,
-                render: function(data, type, full, meta) {
-                    if (data == null){
-                        return "Belum Ada Data!";
-                    } else {
-                        return data;
-                    }
-                }
-            },
-            {
-                targets: 4,
-                render: function(data, type, full, meta) {
-                    if (data == null){
-                        return "Belum Ada Data!";
-                    } else {
-                        return data;
-                    }
-                }
-            },
             // {
             //     targets: 3,
             //     className: 'text-center',
@@ -206,8 +184,6 @@
                 { data: null },
                 { data: 'user_id'},
                 { data: 'name'},
-                { data: 'latitude'},  
-                { data: 'longitude'}, 
                 { data: 'id'}, 
             ],
             language: {

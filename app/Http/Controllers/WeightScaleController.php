@@ -67,8 +67,6 @@ class WeightScaleController extends Controller
                 'unique_id' => $request->unique_id,
                 'name' => $request->name,
                 'pin' => 123456,
-                'latitude' => null,
-                'longitude' => null,
             ]);
 
             DB::commit();

@@ -13,92 +13,72 @@ use App\Http\Controllers\Controller;
 
 class TrashDataController extends Controller
 {
-    public function createByDetailType(Request $request, string $trashType, string $detailType = null, string $uniqueId)
-    {
-        $request->validate([
-            'pin' => 'required|digits:6',
-            'weight' => 'required|numeric',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
+    public function createByDetailType(Request $request, string $trashType, string $uniqueId, string $detailType = null)
+{
+    $request->validate([
+        'pin' => 'required|digits:6',
+        'weight' => 'required|numeric',
+    ]);
+
+    // Cek apakah detailType diperlukan
+    if ($trashType == 'recyclable' && is_null($detailType)) {
+        return response()->json(['status' => 'error', 'message' => 'Detail Jenis Sampah diperlukan untuk sampah yang dapat didaur ulang'], 400);
+    }
+
+    try {
+        // Cari WeightScale berdasarkan uniqueId
+        $weightScale = WeightScale::where('unique_id', $uniqueId)->first();
+
+        if (!$weightScale) {
+            return response()->json(['status' => 'error', 'message' => 'Timbangan tidak ditemukan'], 404);
+        }
+
+        if ($request->pin !== $weightScale->pin) {
+            return response()->json(['status' => 'error', 'message' => 'PIN tidak valid'], 400);
+        }
+
+        // Cari TrashType berdasarkan trashType
+        $trashTypeId = TrashType::where('type', $trashType)->pluck('id')->first();
+        if (!$trashTypeId) {
+            return response()->json(['status' => 'error', 'message' => 'Jenis Sampah tidak valid'], 400);
+        }
+
+        $trashTypeDetailId = null;
+        if ($trashType == 'recyclable') {
+            // Cari TrashTypeDetail berdasarkan detailType
+            $trashTypeDetailId = TrashTypeDetail::where('type', $detailType)->pluck('id')->first();
+            if (!$trashTypeDetailId) {
+                return response()->json(['status' => 'error', 'message' => 'Detail Jenis Sampah tidak valid'], 400);
+            }
+        }
+
+        TrashData::create([
+            'user_id' => $weightScale->user_id,
+            'garbage_officer_id' => $weightScale->user_id,
+            'trash_bin_id' => null,
+            'weight_scale_id' => $weightScale->id,
+            'weight' => $request->weight,
+            'trash_type_id' => $trashTypeId,
+            'trash_type_detail_id' => $trashTypeDetailId,
         ]);
 
-        try {
-            // Cari WeightScale berdasarkan uniqueId
-            $weightScale = WeightScale::where('unique_id', $uniqueId)->first();
+        return response()->json(['status' => 'success', 'message' => 'Data sampah berhasil dibuat'], 200);
+    } catch (\Throwable $th) {
+        return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
+    }
+}
 
-            if (!$weightScale) {
-                return response()->json(['status' => 'error', 'message' => 'Weight Scale not found'], 404);
-            }
+public function getDeviceInfo(string $uniqueId)
+{
+    $weightScale = WeightScale::where('unique_id', $uniqueId)->first();
 
-            if ($request->pin !== $weightScale->pin) {
-                return response()->json(['status' => 'error', 'message' => 'Invalid PIN'], 400);
-            }
-
-            // Perbarui latitude dan longitude pada WeightScale
-            $weightScale->latitude = $request->latitude;
-            $weightScale->longitude = $request->longitude;
-            $weightScale->save();
-
-            // Cari TrashType berdasarkan trashType
-            $trashTypeId = TrashType::where('type', $trashType)->pluck('id')->first();
-            if (!$trashTypeId) {
-                return response()->json(['status' => 'error', 'message' => 'Invalid Trash Type'], 400);
-            }
-
-            $trashTypeDetailId = null;
-            if ($trashType == 'recyclable') {
-                // Jika tipe sampah recyclable, detail tipe sampah harus ada
-                if (!$detailType) {
-                    return response()->json(['status' => 'error', 'message' => 'Detail Trash Type is required for recyclable trash'], 400);
-                }
-
-                // Cari TrashTypeDetail berdasarkan detailType
-                $trashTypeDetailId = TrashTypeDetail::where('type', $detailType)->pluck('id')->first();
-                if (!$trashTypeDetailId) {
-                    return response()->json(['status' => 'error', 'message' => 'Invalid Trash Type Detail'], 400);
-                }
-            }
-
-            TrashData::create([
-                'user_id' => $weightScale->user_id,
-                'garbage_officer_id' => $weightScale->user_id,
-                'trash_bin_id' => null,
-                'weight_scale_id' => $weightScale->id,
-                'weight' => $request->weight,
-                'trash_type_id' => $trashTypeId,
-                'trash_type_detail_id' => $trashTypeDetailId,
-            ]);
-
-            return response()->json(['status' => 'success', 'message' => 'Trash data created successfully'], 200);
-        } catch (\Throwable $th) {
-            return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
-        }
+    if (!$weightScale) {
+        return response()->json(['status' => 'error', 'message' => 'Timbangan tidak ditemukan'], 404);
     }
 
-    public function getDeviceInfo(string $uniqueId)
-    {
-        try {
-            $weightScale = WeightScale::where('unique_id', $uniqueId)->first();
+    return response()->json(['status' => 'success', 'data' => $weightScale], 200);
+}
 
-            if (!$weightScale) {
-                return Helper::notFoundMessage('Weight Scale not found');
-            }
-
-            $deviceInfo = [
-                'id' => $weightScale->id,
-                'user_id' => $weightScale->user_id,
-                'unique_id' => $weightScale->unique_id,
-                'name' => $weightScale->name,
-                'pin' => $weightScale->pin,
-                'latitude' => $weightScale->latitude,
-                'longitude' => $weightScale->longitude,
-            ];
-
-            return Helper::successMessage('Device information retrieved successfully', $deviceInfo);
-        } catch (\Throwable $th) {
-            return Helper::internalServerErrorMessage($th->getMessage());
-        }
-    }
 
     public function resetPin(string $uniqueId)
     {
