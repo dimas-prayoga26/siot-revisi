@@ -13,8 +13,10 @@ use App\Http\Controllers\Controller;
 
 class TrashDataController extends Controller
 {
-    public function createByDetailType(Request $request, string $trashType, string $uniqueId, string $detailType = null)
+    public function createByDetailType(Request $request, string $trashType, string $detailType, string $uniqueId)
 {
+    \Log::info('Controller - Unique ID: ' . $uniqueId);
+
     $request->validate([
         'pin' => 'required|digits:6',
         'weight' => 'required|numeric',
@@ -22,6 +24,7 @@ class TrashDataController extends Controller
 
     // Cek apakah detailType diperlukan
     if ($trashType == 'recyclable' && is_null($detailType)) {
+        \Log::error('Detail Jenis Sampah diperlukan untuk sampah yang dapat didaur ulang');
         return response()->json(['status' => 'error', 'message' => 'Detail Jenis Sampah diperlukan untuk sampah yang dapat didaur ulang'], 400);
     }
 
@@ -30,26 +33,27 @@ class TrashDataController extends Controller
         $weightScale = WeightScale::where('unique_id', $uniqueId)->first();
 
         if (!$weightScale) {
+            \Log::error('WeightScale not found for Unique ID: ' . $uniqueId);
             return response()->json(['status' => 'error', 'message' => 'Timbangan tidak ditemukan'], 404);
         }
 
         if ($request->pin !== $weightScale->pin) {
+            \Log::error('Invalid PIN for Unique ID: ' . $uniqueId);
             return response()->json(['status' => 'error', 'message' => 'PIN tidak valid'], 400);
         }
 
         // Cari TrashType berdasarkan trashType
         $trashTypeId = TrashType::where('type', $trashType)->pluck('id')->first();
         if (!$trashTypeId) {
+            \Log::error('Invalid Trash Type: ' . $trashType);
             return response()->json(['status' => 'error', 'message' => 'Jenis Sampah tidak valid'], 400);
         }
 
-        $trashTypeDetailId = null;
-        if ($trashType == 'recyclable') {
-            // Cari TrashTypeDetail berdasarkan detailType
-            $trashTypeDetailId = TrashTypeDetail::where('type', $detailType)->pluck('id')->first();
-            if (!$trashTypeDetailId) {
-                return response()->json(['status' => 'error', 'message' => 'Detail Jenis Sampah tidak valid'], 400);
-            }
+        // Cari TrashTypeDetail berdasarkan detailType
+        $trashTypeDetailId = TrashTypeDetail::where('type', $detailType)->pluck('id')->first();
+        if (!$trashTypeDetailId) {
+            \Log::error('Invalid Trash Type Detail: ' . $detailType);
+            return response()->json(['status' => 'error', 'message' => 'Detail Jenis Sampah tidak valid'], 400);
         }
 
         TrashData::create([
@@ -64,9 +68,65 @@ class TrashDataController extends Controller
 
         return response()->json(['status' => 'success', 'message' => 'Data sampah berhasil dibuat'], 200);
     } catch (\Throwable $th) {
+        \Log::error('Error creating trash data: ' . $th->getMessage());
         return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
     }
 }
+
+public function createByTrashType(Request $request, string $trashType, string $uniqueId)
+{
+    \Log::info('Controller - Unique ID: ' . $uniqueId);
+
+    $request->validate([
+        'pin' => 'required|digits:6',
+        'weight' => 'required|numeric',
+    ]);
+
+    // Cek apakah detailType diperlukan
+    if ($trashType == 'recyclable') {
+        \Log::error('Detail Jenis Sampah diperlukan untuk sampah yang dapat didaur ulang');
+        return response()->json(['status' => 'error', 'message' => 'Detail Jenis Sampah diperlukan untuk sampah yang dapat didaur ulang'], 400);
+    }
+
+    try {
+        // Cari WeightScale berdasarkan uniqueId
+        $weightScale = WeightScale::where('unique_id', $uniqueId)->first();
+
+        if (!$weightScale) {
+            \Log::error('WeightScale not found for Unique ID: ' . $uniqueId);
+            return response()->json(['status' => 'error', 'message' => 'Timbangan tidak ditemukan'], 404);
+        }
+
+        if ($request->pin !== $weightScale->pin) {
+            \Log::error('Invalid PIN for Unique ID: ' . $uniqueId);
+            return response()->json(['status' => 'error', 'message' => 'PIN tidak valid'], 400);
+        }
+
+        // Cari TrashType berdasarkan trashType
+        $trashTypeId = TrashType::where('type', $trashType)->pluck('id')->first();
+        if (!$trashTypeId) {
+            \Log::error('Invalid Trash Type: ' . $trashType);
+            return response()->json(['status' => 'error', 'message' => 'Jenis Sampah tidak valid'], 400);
+        }
+
+        TrashData::create([
+            'user_id' => $weightScale->user_id,
+            'garbage_officer_id' => $weightScale->user_id,
+            'trash_bin_id' => null,
+            'weight_scale_id' => $weightScale->id,
+            'weight' => $request->weight,
+            'trash_type_id' => $trashTypeId,
+            'trash_type_detail_id' => null,
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Data sampah berhasil dibuat'], 200);
+    } catch (\Throwable $th) {
+        \Log::error('Error creating trash data: ' . $th->getMessage());
+        return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
+    }
+}
+
+
 
 public function getDeviceInfo(string $uniqueId)
 {
